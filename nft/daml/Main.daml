@@ -1,0 +1,73 @@
+module Main where
+
+import Token
+import UserAdmin
+
+import Daml.Script
+
+setup : Script ()
+setup = script do
+  alice <- allocatePartyWithHint "Alice" (PartyIdHint "Alice")
+  bob <- allocatePartyWithHint "Bob" (PartyIdHint "Bob")
+  charlie <- allocatePartyWithHint "Charlie" (PartyIdHint "Charlie")
+  userAdmin <- allocatePartyWithHint "UserAdmin" (PartyIdHint "UserAdmin") 
+
+  aliceIssuer <- submit userAdmin do 
+    createCmd Issuer 
+      with 
+        userAdmin = userAdmin 
+        issuer = alice 
+
+  originalToken <- submit alice do 
+    exerciseCmd aliceIssuer MintToken 
+      with 
+        description = "Cat Pic 1"
+        initialPrice = 100.00
+        currency = "USD" 
+        royaltyRate = 0.05
+
+  bobOffer <- submit alice do 
+    exerciseCmd originalToken Offer 
+      with 
+        newOwner = bob 
+        price = 200.00 
+
+  bobRequest <- submit bob do 
+    createCmd OwnerRequest 
+      with 
+        userAdmin = userAdmin 
+        owner = bob 
+        reason = "I've got connections"
+
+  bobOwner <- submit userAdmin do 
+    exerciseCmd bobRequest GrantOwnerRights
+
+  charlieRequest <- submit charlie do 
+    createCmd OwnerRequest
+      with 
+        userAdmin = userAdmin 
+        owner = charlie 
+        reason = "FOMO" 
+
+  charlieOwner <- submit userAdmin do 
+    exerciseCmd charlieRequest GrantOwnerRights
+
+  (bobToken, _, _) <- submit bob do 
+    exerciseCmd bobOwner AcceptTokenAsNewOwner
+      with 
+        offerId = bobOffer
+
+  charlieOffer <- submit bob do 
+    exerciseCmd bobToken Offer 
+      with 
+        newOwner = charlie 
+        price = 300.00 
+
+  submit charlie do 
+    exerciseCmd charlieOwner AcceptTokenAsNewOwner
+      with 
+        offerId = charlieOffer
+
+  return ()
+
+  

@@ -1,0 +1,88 @@
+module UserAdmin where 
+
+import Token
+import Payment
+
+template Issuer 
+  with 
+    userAdmin: Party 
+    issuer: Party 
+  where 
+    signatory userAdmin 
+
+    controller issuer can 
+      nonconsuming MintToken: ContractId Token 
+        with 
+          description: Text 
+          initialPrice: Decimal 
+          currency: Text 
+          royaltyRate: Decimal 
+        do 
+          issued <- getTime
+          create Token 
+            with 
+              lastPrice = initialPrice
+              owner = issuer 
+              ..
+
+    controller userAdmin can 
+      RevokeIssuer: () 
+        do return ()
+
+template IssuerRequest
+  with 
+    userAdmin: Party 
+    issuer: Party 
+    reason: Text 
+  where 
+    signatory issuer 
+
+    controller userAdmin can 
+      GrantIssuerRights: ContractId Issuer 
+        do 
+          create Issuer with ..
+
+      RejectIssuerRequest: () 
+        do return ()
+
+template Owner 
+  with 
+    userAdmin: Party 
+    owner: Party 
+  where 
+    signatory userAdmin
+
+    controller owner can 
+      nonconsuming AcceptTokenAsNewOwner: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
+        with 
+          offerId: ContractId TokenOffer 
+        do 
+          exercise offerId AcceptToken 
+
+      nonconsuming AcceptTokenByKey: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
+        with 
+          issuer: Party 
+          currentOwner: Party 
+          description: Text 
+        do 
+          exerciseByKey @TokenOffer (issuer, currentOwner, description) AcceptToken
+
+    controller userAdmin can 
+      RevokeOwnerRights: () 
+        do return ()
+
+template OwnerRequest 
+  with 
+    userAdmin: Party 
+    owner: Party 
+    reason: Text 
+  where 
+    signatory owner 
+
+    controller userAdmin can 
+      GrantOwnerRights: ContractId Owner 
+        do 
+          create Owner with ..
+
+      RejectOwnerRequest: () 
+        do return ()
