@@ -4,7 +4,7 @@ export const isLocalDev = process.env.NODE_ENV === 'development';
 
 let host = window.location.host.split('.')
 
-const applicationId = 'daml-ui-template'
+const applicationId = 'nft'
 export const ledgerId = isLocalDev ? applicationId : host[0];
 
 let apiUrl = host.slice(1)
