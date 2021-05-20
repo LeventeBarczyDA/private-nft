@@ -7,6 +7,7 @@ import Report from "../../pages/report/Report";
 import { useUserState } from "../../context/UserContext";
 import { wsBaseUrl, httpBaseUrl } from "../../config";
 import useStyles from "./styles";
+import MyWorks from "../../pages/report/MyWorks";
 
 const Layout = () => {
   const classes = useStyles();
@@ -25,6 +26,7 @@ const Layout = () => {
                 <div className={classes.fakeToolbar} />
                 <Switch>
                   <Route path="/app/report" component={Report} />
+                  <Route path="/app/myworks" component={MyWorks} />
                 </Switch>
               </div>
             </>
