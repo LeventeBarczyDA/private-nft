@@ -24,6 +24,14 @@ export default function MyWorks() {
   const issuerRequests = useStreamQueries(IssuerRequest, issuedByMe).contracts;
   const myIssuerRequest = issuerRequests.length >= 1 ? issuerRequests[0] : null;
 
+  function formatter(ccy: string, amountStr: string){
+    const ccyFormatter=new Intl.NumberFormat('en-us',{
+      style: 'currency',
+      currency: ccy
+    });
+    return ccyFormatter.format(parseFloat(amountStr));
+  }
+
   const defaultMintProps : InputDialogProps<MintToken> = {
     open: false,
     title: "Mint Token",
@@ -142,7 +150,7 @@ export default function MyWorks() {
               <TableCell key={1} className={classes.tableCell}>{t.payload.owner}</TableCell>
               <TableCell key={2} className={classes.tableCell}>{t.payload.description}</TableCell>
               <TableCell key={3} className={classes.tableCell}>{t.payload.issued}</TableCell>
-              <TableCell key={4} className={classes.tableCell}>{t.payload.lastPrice}</TableCell>
+              <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
               <TableCell key={5} className={classes.tableCell}>{t.payload.currency}</TableCell>
               <TableCell key={6} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
             </TableRow>

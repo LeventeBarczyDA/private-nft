@@ -8,6 +8,9 @@ import { useUserState } from "../../context/UserContext";
 import { wsBaseUrl, httpBaseUrl } from "../../config";
 import useStyles from "./styles";
 import MyWorks from "../../pages/report/MyWorks";
+import MyTokens from "../../pages/report/MyTokens";
+import Payments from "../../pages/report/Payments";
+import UserAdmin from "../../pages/report/UserAdmin";
 
 const Layout = () => {
   const classes = useStyles();
@@ -25,8 +28,10 @@ const Layout = () => {
               <div className={classes.content}>
                 <div className={classes.fakeToolbar} />
                 <Switch>
-                  <Route path="/app/report" component={Report} />
                   <Route path="/app/myworks" component={MyWorks} />
+                  <Route path="/app/mytokens" component={MyTokens} />
+                  <Route path="/app/payments" component={Payments} />
+                  <Route path="/app/useradmin" component={UserAdmin} />
                 </Switch>
               </div>
             </>
