@@ -25,6 +25,7 @@ template Token
     royaltyRate: Decimal 
   where 
     signatory issuer, userAdmin 
+    ensure userAdmin /= issuer
 
     controller owner can 
       Offer: ContractId TokenOffer
@@ -80,3 +81,13 @@ template TokenOffer
               ..
 
           return (newToken, fromNewOwnerToOwner, condRoyaltyPayment)
+
+    controller newOwner can 
+      Reject: ContractId Token 
+        do 
+          create Token with ..
+
+    controller owner can 
+      ClawBack: ContractId Token 
+        do 
+          create Token with ..

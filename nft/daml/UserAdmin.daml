@@ -9,6 +9,10 @@ template Issuer
     issuer: Party 
   where 
     signatory userAdmin 
+    ensure userAdmin /= issuer
+
+    key (userAdmin, issuer): (Party, Party)
+    maintainer key._1
 
     controller issuer can 
       nonconsuming MintToken: ContractId Token 
@@ -37,6 +41,9 @@ template IssuerRequest
   where 
     signatory issuer 
 
+    key (userAdmin, issuer): (Party, Party)
+    maintainer key._2
+
     controller userAdmin can 
       GrantIssuerRights: ContractId Issuer 
         do 
@@ -51,6 +58,10 @@ template Owner
     owner: Party 
   where 
     signatory userAdmin
+    ensure userAdmin /= owner
+
+    key (userAdmin, owner): (Party, Party)
+    maintainer key._1
 
     controller owner can 
       nonconsuming AcceptTokenAsNewOwner: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
@@ -78,6 +89,9 @@ template OwnerRequest
     reason: Text 
   where 
     signatory owner 
+
+    key (userAdmin, owner): (Party, Party)
+    maintainer key._2
 
     controller userAdmin can 
       GrantOwnerRights: ContractId Owner 
