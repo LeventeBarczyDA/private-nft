@@ -1,3 +1,6 @@
 /ui/build
 /ui/node_modules
 /ui/yarn.lock
+/.DS_Store
+/nft/private-nft.dot
+/nft/private-nft.png
