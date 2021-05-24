@@ -39,7 +39,8 @@ export default function MyWorks() {
       description: "",
       initialPrice: "",
       currency: "",
-      royaltyRate: ""
+      royaltyRate: "",
+      thumbnail: ""
     },
     fields: {
       description: {
@@ -58,6 +59,11 @@ export default function MyWorks() {
       royaltyRate: {
         label: "Royalty Rate (as decimal)",
         type: "number"
+      },
+      thumbnail: {
+        label: "Thumbnail",
+        type: "upload",
+        prefix: ""
       }
     },
     onClose: async function() {}
@@ -142,6 +148,7 @@ export default function MyWorks() {
             <TableCell key={4} className={classes.tableCell}>Last Price</TableCell>
             <TableCell key={5} className={classes.tableCell}>Currency</TableCell>
             <TableCell key={6} className={classes.tableCell}>Royalty</TableCell>
+            <TableCell key={7} className={classes.tableCell}>Pic</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -153,6 +160,7 @@ export default function MyWorks() {
               <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
               <TableCell key={5} className={classes.tableCell}>{t.payload.currency}</TableCell>
               <TableCell key={6} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
+              <TableCell key={7} className={classes.tableCell}><img src={"data:image/png;base64,"+t.payload.thumbnail} /></TableCell>
             </TableRow>
           ))}
         </TableBody>

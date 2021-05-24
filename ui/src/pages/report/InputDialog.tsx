@@ -9,6 +9,8 @@ import Select from "@material-ui/core/Select";
 import InputLabel from "@material-ui/core/InputLabel";
 import FormControl from "@material-ui/core/FormControl";
 import MenuItem from "@material-ui/core/MenuItem";
+import { Input } from "@material-ui/core";
+import { DropzoneArea } from "material-ui-dropzone";
 
 export interface RegularField {
   label : string
@@ -21,7 +23,13 @@ export interface SelectionField {
   items : string[]
 }
 
-export type Field = RegularField | SelectionField
+export interface UploadField {
+  label : string 
+  type : "upload"
+  prefix : string
+}
+
+export type Field = RegularField | SelectionField | UploadField
 
 export interface InputDialogProps<T extends {[key: string]: any }> {
   open : boolean
@@ -46,6 +54,18 @@ export function InputDialog<T extends { [key : string] : any }>(props : InputDia
             {field.items.map(item => (<MenuItem key={item} value={item}>{item}</MenuItem>))}
           </Select>
         </FormControl>
+      )
+    } else if (field.type === "upload") {
+      return (
+        <DropzoneArea
+          onChange={files => console.log(files)}
+          acceptedFiles={['image/*']}
+          maxFileSize={1000000}
+          filesLimit={1}
+          showPreviews={true}
+          showPreviewsInDropzone={false}
+
+        />
       )
     } else {
       return (
