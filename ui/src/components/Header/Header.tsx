@@ -18,7 +18,7 @@ const Header = ({ history } : RouteComponentProps) => {
     <AppBar position="fixed" className={classes.appBar}>
       <Toolbar className={classes.toolbar}>
         <Typography variant="h6" className={classes.logotype}>
-          DAML App Template
+          Daml Private NFTs
         </Typography>
         <div className={classes.grow} />
         { userState.isAuthenticated && <Typography variant="h6">User: {userState.party}</Typography> }
