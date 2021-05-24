@@ -21,6 +21,7 @@ template Issuer
           initialPrice: Decimal 
           currency: Text 
           royaltyRate: Decimal 
+          thumbnail: Thumbnail
         do 
           issued <- getTime
           create Token 

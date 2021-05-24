@@ -13,6 +13,8 @@ Participants must be explicitly permitted.
 -- datamodel 
 -- rights/obligations 
 
+type Thumbnail = Text -- Assume Base 64
+
 template Token 
   with 
     issuer: Party 
@@ -23,6 +25,7 @@ template Token
     lastPrice: Decimal 
     currency: Text 
     royaltyRate: Decimal 
+    thumbnail: Thumbnail
   where 
     signatory issuer, userAdmin 
     ensure userAdmin /= issuer
@@ -47,6 +50,7 @@ template TokenOffer
     lastPrice: Decimal 
     currency: Text
     royaltyRate: Decimal 
+    thumbnail: Thumbnail
   where 
     signatory issuer, userAdmin, owner 
 
