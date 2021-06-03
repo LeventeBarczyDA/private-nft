@@ -26,7 +26,6 @@ export interface SelectionField {
 export interface UploadField {
   label : string 
   type : "upload"
-  prefix : string
 }
 
 export type Field = RegularField | SelectionField | UploadField
@@ -58,13 +57,19 @@ export function InputDialog<T extends { [key : string] : any }>(props : InputDia
     } else if (field.type === "upload") {
       return (
         <DropzoneArea
-          onChange={files => console.log(files)}
+          key={index}
+          onChange={files => {
+            if (files.length > 0) {
+              const reader = new FileReader();
+              reader.readAsDataURL(files[0]);
+              reader.onload = () => setState({ ...state, [fieldName]: reader.result});
+            }
+          }}
           acceptedFiles={['image/*']}
           maxFileSize={1000000}
           filesLimit={1}
           showPreviews={true}
           showPreviewsInDropzone={false}
-
         />
       )
     } else {

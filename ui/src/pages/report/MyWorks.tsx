@@ -62,8 +62,7 @@ export default function MyWorks() {
       },
       thumbnail: {
         label: "Thumbnail",
-        type: "upload",
-        prefix: ""
+        type: "upload"
       }
     },
     onClose: async function() {}
@@ -160,7 +159,7 @@ export default function MyWorks() {
               <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
               <TableCell key={5} className={classes.tableCell}>{t.payload.currency}</TableCell>
               <TableCell key={6} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
-              <TableCell key={7} className={classes.tableCell}><img src={"data:image/png;base64,"+t.payload.thumbnail} /></TableCell>
+              <TableCell key={7} className={classes.tableCell}><img src={t.payload.thumbnail} /></TableCell>
             </TableRow>
           ))}
         </TableBody>
