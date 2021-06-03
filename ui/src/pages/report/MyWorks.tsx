@@ -12,6 +12,9 @@ import { Token } from "@daml.js/nft-0.0.1/lib/Token"
 import { InputDialog, InputDialogProps } from "./InputDialog";
 import useStyles from "./styles";
 import { Issuer, IssuerRequest, MintToken } from "@daml.js/nft-0.0.1/lib/UserAdmin";
+import { GridList, GridListTile, GridListTileBar, IconButton, Popover } from "@material-ui/core";
+import InfoIcon from '@material-ui/icons/Info';
+import { TokenExpiredError } from "jsonwebtoken";
 
 export default function MyWorks() {
   const classes = useStyles();
@@ -106,6 +109,14 @@ export default function MyWorks() {
     setIssuerRequestProps({...defaultIssuerRequestProps, open: true, onClose});
   }
 
+  interface Tombstone {
+    token: Omit<Token, "thumbnail"> 
+    contractId: ContractId<Token>
+    anchorEl: HTMLElement 
+  };
+
+  const [ tombstone, setTombstone ] = useState<Tombstone | null>(null);
+
   return (
 
     <>
@@ -138,32 +149,47 @@ export default function MyWorks() {
         ? "Awaiting "+myIssuerRequest.payload.userAdmin+" to Process my Request ('"+myIssuerRequest.payload.reason+"')."
         : ""
       }</p>
-      <Table size="small">
-        <TableHead>
-          <TableRow className={classes.tableRow}>
-            <TableCell key={1} className={classes.tableCell}>Owner</TableCell>
-            <TableCell key={2} className={classes.tableCell}>Description</TableCell>
-            <TableCell key={3} className={classes.tableCell}>Issued</TableCell>
-            <TableCell key={4} className={classes.tableCell}>Last Price</TableCell>
-            <TableCell key={5} className={classes.tableCell}>Currency</TableCell>
-            <TableCell key={6} className={classes.tableCell}>Royalty</TableCell>
-            <TableCell key={7} className={classes.tableCell}>Pic</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tokens.map(t => (
-            <TableRow key={t.contractId} className={classes.tableRow}>
-              <TableCell key={1} className={classes.tableCell}>{t.payload.owner}</TableCell>
-              <TableCell key={2} className={classes.tableCell}>{t.payload.description}</TableCell>
-              <TableCell key={3} className={classes.tableCell}>{t.payload.issued}</TableCell>
-              <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
-              <TableCell key={5} className={classes.tableCell}>{t.payload.currency}</TableCell>
-              <TableCell key={6} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
-              <TableCell key={7} className={classes.tableCell}><img src={t.payload.thumbnail} /></TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Popover
+        open={!!tombstone}
+        anchorEl={tombstone ? tombstone.anchorEl : null}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        onClose={() => setTombstone(null)}
+      >
+        {tombstone ? 
+          <>
+            {tombstone.contractId}
+            <br />{"Issued on "+tombstone.token.issued}
+            <br />{"Owned by "+tombstone.token.owner}
+            <br />{"Last price "+formatter(tombstone.token.currency, tombstone.token.lastPrice)}
+            <br />{"Royalty rate "+tombstone.token.royaltyRate}
+          </> 
+          : "Nothin'"}
+      </Popover>
+      <GridList cellHeight={320}  cols={3}>
+        {tokens.map(t => (
+          <GridListTile key={t.contractId}>
+            
+            <img src={t.payload.thumbnail} />
+            <GridListTileBar 
+              title={t.payload.description}
+              subtitle={"By "+t.payload.issuer}
+              actionIcon={<IconButton 
+                disableRipple={true}
+                onClick={(e) => {setTombstone({token: t.payload, contractId: t.contractId, anchorEl: e.currentTarget}); console.log("Enter")}}>
+                  <InfoIcon />
+              </IconButton>}
+              actionPosition="left"
+            />
+          </GridListTile>
+        ))}
+      </GridList>
     </>
   );
 }
