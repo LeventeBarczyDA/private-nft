@@ -14,6 +14,7 @@ import useStyles from "./styles";
 import { Owner, OwnerRequest } from "@daml.js/nft-0.0.1/lib/UserAdmin";
 import { Offer } from "@daml.js/nft-0.0.1/lib/Token";
 import { Typography } from "@material-ui/core";
+import { fetchWellKnownParties } from "./wellKnownParties";
 
 function formatter(ccy: string, amountStr: string){
   const ccyFormatter=new Intl.NumberFormat('en-us',{
@@ -57,7 +58,9 @@ export default function MyTokens() {
     async function onClose(state: FieldsForOwnerRequest | null) {
       setOwnerRequestProps({...defaultOwnerRequestProps, open: false});
       if (!state) return; 
-      await ledger.create(OwnerRequest, {...state, owner: party, userAdmin: "UserAdmin"});
+      const wkp = await fetchWellKnownParties();
+      if (!wkp.parties) return;
+      await ledger.create(OwnerRequest, {...state, owner: party, userAdmin: wkp.parties.userAdminParty});
     };
     setOwnerRequestProps({...defaultOwnerRequestProps, open: true, onClose});
   }

@@ -8,13 +8,14 @@ import Button from "@material-ui/core/Button";
 import Ledger from "@daml/ledger";
 import { useLedger, useParty, useStreamQueries} from "@daml/react";
 import { ContractId } from "@daml/types";
-import { Token } from "@daml.js/nft-0.0.1/lib/Token"
+import { Token, TokenOffer } from "@daml.js/nft-0.0.1/lib/Token"
 import { InputDialog, InputDialogProps } from "./InputDialog";
 import useStyles from "./styles";
 import { Issuer, IssuerRequest, MintToken } from "@daml.js/nft-0.0.1/lib/UserAdmin";
 import { GridList, GridListTile, GridListTileBar, IconButton, Popover } from "@material-ui/core";
-import InfoIcon from '@material-ui/icons/Info';
+import Notes from '@material-ui/icons/Notes';
 import { TokenExpiredError } from "jsonwebtoken";
+import { fetchWellKnownParties } from "./wellKnownParties";
 
 export default function MyWorks() {
   const classes = useStyles();
@@ -22,6 +23,7 @@ export default function MyWorks() {
   const issuedByMe = () => [{issuer: party}];
   const ledger : Ledger = useLedger();
   const tokens = useStreamQueries(Token, issuedByMe).contracts;
+  const offers = useStreamQueries(TokenOffer, issuedByMe).contracts;
   const issuers = useStreamQueries(Issuer, issuedByMe).contracts;
   const myIssuerRights = issuers.length >= 1 ? issuers[0] : null;
   const issuerRequests = useStreamQueries(IssuerRequest, issuedByMe).contracts;
@@ -104,7 +106,13 @@ export default function MyWorks() {
     async function onClose(state: FieldsForIssuerRequest | null) {
       setIssuerRequestProps({...defaultIssuerRequestProps, open: false});
       if (!state) return; 
-      await ledger.create(IssuerRequest, {...state, issuer: party, userAdmin: "UserAdmin"});
+      const wkp = await fetchWellKnownParties();
+      if (!wkp.parties) return;
+      await ledger.create(IssuerRequest, {
+        ...state, 
+        issuer: party, 
+        userAdmin: wkp.parties.userAdminParty
+      });
     };
     setIssuerRequestProps({...defaultIssuerRequestProps, open: true, onClose});
   }
@@ -112,6 +120,7 @@ export default function MyWorks() {
   interface Tombstone {
     token: Omit<Token, "thumbnail"> 
     contractId: ContractId<Token>
+    templateId: string
     anchorEl: HTMLElement 
   };
 
@@ -164,16 +173,43 @@ export default function MyWorks() {
       >
         {tombstone ? 
           <>
-            {tombstone.contractId}
-            <br />{"Issued on "+tombstone.token.issued}
-            <br />{"Owned by "+tombstone.token.owner}
-            <br />{"Last price "+formatter(tombstone.token.currency, tombstone.token.lastPrice)}
-            <br />{"Royalty rate "+tombstone.token.royaltyRate}
+            <Table size="small">
+              <TableBody>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>contractId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.contractId}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell key={0} className={classes.tableCell}>templateId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.templateId}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Issued on </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.token.issued}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Owned by </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.token.owner}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Last Price </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{formatter(tombstone.token.currency, tombstone.token.lastPrice)}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Royalty Rate per 1 {tombstone.token.currency}</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.token.royaltyRate}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>User Admin </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tombstone.token.userAdmin}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </> 
           : "Nothin'"}
       </Popover>
       <GridList cellHeight={320}  cols={3}>
-        {tokens.map(t => (
+        {[...tokens, ...offers].map(t => (
           <GridListTile key={t.contractId}>
             
             <img src={t.payload.thumbnail} />
@@ -182,8 +218,13 @@ export default function MyWorks() {
               subtitle={"By "+t.payload.issuer}
               actionIcon={<IconButton 
                 disableRipple={true}
-                onClick={(e) => {setTombstone({token: t.payload, contractId: t.contractId, anchorEl: e.currentTarget}); console.log("Enter")}}>
-                  <InfoIcon />
+                onClick={(e) => setTombstone({
+                  token: t.payload, 
+                  contractId: t.contractId, 
+                  templateId: t.templateId, 
+                  anchorEl: e.currentTarget
+                })}>
+                  <Notes />
               </IconButton>}
               actionPosition="left"
             />
