@@ -9,6 +9,7 @@ build:
 deploy: build
 	mkdir -p deploy
 	cp nft/.daml/dist/*.dar deploy
+	cd ui && zip -r ../deploy/private-nft-ui.zip build
 
 clean:
 	cd nft && rm -rf .daml
