@@ -13,8 +13,9 @@ import { InputDialog, InputDialogProps } from "./InputDialog";
 import useStyles from "./styles";
 import { Owner, OwnerRequest } from "@daml.js/nft-0.0.1/lib/UserAdmin";
 import { Offer } from "@daml.js/nft-0.0.1/lib/Token";
-import { Typography } from "@material-ui/core";
+import { GridList, GridListTile, GridListTileBar, IconButton, Popover, Typography } from "@material-ui/core";
 import { fetchWellKnownParties } from "./wellKnownParties";
+import { CallMade, CallReceived, Check } from "@material-ui/icons";
 
 function formatter(ccy: string, amountStr: string){
   const ccyFormatter=new Intl.NumberFormat('en-us',{
@@ -22,6 +23,16 @@ function formatter(ccy: string, amountStr: string){
     currency: ccy
   });
   return ccyFormatter.format(parseFloat(amountStr));
+}
+
+interface TokenTombstone {
+  token: Omit<Token.CreateEvent, "payload.thumbnail">
+  anchorEl: HTMLElement
+}
+
+interface TokenOfferTombstone {
+  tokenOffer: Omit<TokenOffer.CreateEvent, "payload.thumbnail">
+  anchorEl: HTMLElement
 }
 
 export default function MyTokens() {
@@ -87,152 +98,250 @@ export default function MyTokens() {
 
   const [ offerProps, setOfferProps ] = useState(defaultOfferProps);
   // One can pass the original contracts CreateEvent
-  function showOffer(token : Token.CreateEvent) {
+  function showOffer(ts : TokenTombstone) {
     async function onClose(state : Offer | null) {
       setOfferProps({ ...defaultOfferProps, open: false});
+      setTokenTombstone(null);
       // if you want to use the contracts payload
-      if (!state || token.payload.owner === state.newOwner) return;
-      await ledger.exercise(Token.Offer, token.contractId, state);
+      if (!state || ts.token.payload.owner === state.newOwner) return;
+      await ledger.exercise(Token.Offer, ts.token.contractId, state);
     };
-    setOfferProps({ ...defaultOfferProps, open: true, onClose})
+    setOfferProps({ ...defaultOfferProps, open: true, onClose});
   };
 
-  async function justAccept(offer: TokenOffer.CreateEvent) {
+  async function justAccept(ts: TokenOfferTombstone) {
     if (!myOwnerRight) return;
-    ledger.exercise(Owner.AcceptTokenAsNewOwner, myOwnerRight.contractId, {offerId: offer.contractId});
+    setTokenOfferTombstone(null);
+    ledger.exercise(Owner.AcceptTokenAsNewOwner, myOwnerRight.contractId, { offerId: ts.tokenOffer.contractId });
   }
 
-  async function justReject(offer: TokenOffer.CreateEvent) {
-    ledger.exercise(TokenOffer.Reject, offer.contractId, {});
+  async function justReject(ts: TokenOfferTombstone) {
+    setTokenOfferTombstone(null);
+    ledger.exercise(TokenOffer.Reject, ts.tokenOffer.contractId, {});
   }
 
-  async function justClawBack(offer: TokenOffer.CreateEvent) {
-    ledger.exercise(TokenOffer.ClawBack, offer.contractId, {});
+  async function justClawBack(ts: TokenOfferTombstone) {
+    setTokenOfferTombstone(null);
+    ledger.exercise(TokenOffer.ClawBack, ts.tokenOffer.contractId, {});
   }
+
+  const [tokenTombstone, setTokenTombstone] = useState<TokenTombstone | null>(null);
+  const [tokenOfferTombstone, setTokenOfferTombstone] = useState<TokenOfferTombstone | null>(null);
 
   return (
 
     <>
       <InputDialog {...ownerRequestProps} />
       <InputDialog {...offerProps} />
+
+      <Popover
+        open={!!tokenTombstone}
+        anchorEl={tokenTombstone ? tokenTombstone.anchorEl: null}
+        anchorOrigin={{
+          vertical:'bottom',
+          horizontal:'left'
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left'
+        }}
+        onClose={() => setTokenTombstone(null)}
+      >
+        {tokenTombstone ? 
+          <>
+            <Table size="small">
+              <TableBody>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>contractId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.contractId}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell key={0} className={classes.tableCell}>templateId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.templateId}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Issued on </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.payload.issued}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Owned by </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.payload.owner}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Last Price </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{formatter(tokenTombstone.token.payload.currency, tokenTombstone.token.payload.lastPrice)}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Royalty Rate per 1 {tokenTombstone.token.payload.currency}</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.payload.royaltyRate}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>User Admin </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenTombstone.token.payload.userAdmin}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Trade</TableCell>
+                  <TableCell key={7} className={classes.tableCellButton}>
+                    <Button 
+                      color="primary" 
+                      size="small" 
+                      className={classes.choiceButton} 
+                      variant="contained" 
+                      disabled={tokenTombstone.token.payload.owner !== party || tokenTombstone.token.templateId !== Token.templateId} 
+                      onClick={() => showOffer(tokenTombstone)}>
+                        Offer
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </> 
+          : "Nothin'"}
+      </Popover>
+
+      <Popover
+        open={!!tokenOfferTombstone}
+        anchorEl={tokenOfferTombstone ? tokenOfferTombstone.anchorEl: null}
+        anchorOrigin={{
+          vertical:'bottom',
+          horizontal:'left'
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left'
+        }}
+        onClose={() => setTokenOfferTombstone(null)}
+      >
+        {tokenOfferTombstone ? 
+          <>
+            <Table size="small">
+              <TableBody>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>contractId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.contractId}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell key={0} className={classes.tableCell}>templateId</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.templateId}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Issued on </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.payload.issued}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Owned by </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.payload.owner}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Offered To</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.payload.newOwner}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Last Price </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{formatter(tokenOfferTombstone.tokenOffer.payload.currency, tokenOfferTombstone.tokenOffer.payload.lastPrice)}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Royalty Rate per 1 {tokenOfferTombstone.tokenOffer.payload.currency}</TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.payload.royaltyRate}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>User Admin </TableCell>
+                  <TableCell key={1} className={classes.tableCell}>{tokenOfferTombstone.tokenOffer.payload.userAdmin}</TableCell>
+                </TableRow>
+                <TableRow className={classes.tableRow}>
+                  <TableCell key={0} className={classes.tableCell}>Trade</TableCell>
+                  <TableCell key={1} className={classes.tableCellButton}>
+                    <Button 
+                      color="primary" 
+                      size="small" 
+                      className={classes.choiceButton} 
+                      variant="contained" 
+                      disabled={tokenOfferTombstone.tokenOffer.payload.newOwner !== party} 
+                      onClick={() => justAccept(tokenOfferTombstone)}>
+                        Accept
+                    </Button> 
+
+                    <Button 
+                      color="primary" 
+                      size="small" 
+                      className={classes.choiceButton} 
+                      variant="contained" 
+                      disabled={tokenOfferTombstone.tokenOffer.payload.newOwner !== party} 
+                      onClick={() => justReject(tokenOfferTombstone)}>
+                        Reject
+                    </Button> 
+
+                    <Button 
+                      color="primary" 
+                      size="small" 
+                      className={classes.choiceButton} 
+                      variant="contained" 
+                      disabled={tokenOfferTombstone.tokenOffer.payload.owner !== party} 
+                      onClick={() => justClawBack(tokenOfferTombstone)}>
+                        Claw Back
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </> 
+          : "Nothin'"}
+      </Popover>
+      <GridList cellHeight={320} cols={3}>
+        {[...tokens, ...offeredByMe, ...offeredToMe].map(t => (
+          <GridListTile key={t.contractId}>
+            <img src={t.payload.thumbnail} />
+            <GridListTileBar
+              title={t.payload.description}
+              subtitle={"By "+t.payload.issuer}
+              actionIcon={<IconButton
+                disableRipple={true}
+                onClick={(e) => {
+                  switch (t.templateId) {
+                    case Token.templateId:
+                      setTokenTombstone({token: t, anchorEl: e.currentTarget});
+                      setTokenOfferTombstone(null);
+                      break;
+                    case TokenOffer.templateId:
+                      setTokenTombstone(null);
+                      setTokenOfferTombstone({tokenOffer: t, anchorEl: e.currentTarget});
+                      break;
+                  }
+                }}>{
+                  t.templateId === Token.templateId 
+                  ? <Check />
+                  : (t.payload.newOwner === party 
+                    ? <CallReceived />
+                    : <CallMade />)
+                }
+                </IconButton>}
+                actionPosition="left"
+            />
+          </GridListTile>
+        ))}
+      </GridList>
       <p>{myOwnerRight 
         ? "Right to Own Approved by "+ myOwnerRight.payload.userAdmin
         : "I'm not authorized yet to Own Tokens."
       }</p>
-      <Button 
-        color="primary" 
-        size="small" 
-        className={classes.choiceButton}
-        disabled={!!myOwnerRequest || !!myOwnerRight} 
-        variant="contained" onClick={() => showOwnerRequest()}
-      >
-        I want to Own Tokens!
-      </Button>
+      {!myOwnerRequest && !myOwnerRight 
+        ?
+          <Button 
+            color="primary" 
+            size="small" 
+            className={classes.choiceButton}
+            disabled={!!myOwnerRequest || !!myOwnerRight} 
+            variant="contained" onClick={() => showOwnerRequest()}
+          >
+          I want to Own Tokens!
+        </Button>
+        : <br />
+      }
       <p>{myOwnerRequest 
         ? "Awaiting "+myOwnerRequest.payload.userAdmin+" to Process my Request ('"+myOwnerRequest.payload.reason+"')."
         : ""
       }</p>
-      <Typography>My Tokens</Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow className={classes.tableRow}>
-            <TableCell key={1} className={classes.tableCell}>Issuer</TableCell>
-            <TableCell key={2} className={classes.tableCell}>Description</TableCell>
-            <TableCell key={3} className={classes.tableCell}>Issued</TableCell>
-            <TableCell key={4} className={classes.tableCell}>Last Price</TableCell>
-            <TableCell key={5} className={classes.tableCell}>Currency</TableCell>
-            <TableCell key={6} className={classes.tableCell}>Royalty</TableCell>
-            <TableCell key={7} className={classes.tableCell}>Offer</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tokens.map(t => (
-            <TableRow key={t.contractId} className={classes.tableRow}>
-              <TableCell key={1} className={classes.tableCell}>{t.payload.issuer}</TableCell>
-              <TableCell key={2} className={classes.tableCell}>{t.payload.description}</TableCell>
-              <TableCell key={3} className={classes.tableCell}>{t.payload.issued}</TableCell>
-              <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
-              <TableCell key={5} className={classes.tableCell}>{t.payload.currency}</TableCell>
-              <TableCell key={6} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
-              <TableCell key={7} className={classes.tableCellButton}>
-                <Button color="primary" size="small" className={classes.choiceButton} variant="contained" disabled={t.payload.owner !== party} onClick={() => showOffer(t)}>Offer</Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <br/>
-      <Typography>Outgoing Offers</Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow className={classes.tableRow}>
-            <TableCell key={0} className={classes.tableCell}>Offered To</TableCell>
-            <TableCell key={1} className={classes.tableCell}>Issuer</TableCell>
-            <TableCell key={2} className={classes.tableCell}>Description</TableCell>
-            <TableCell key={3} className={classes.tableCell}>Issued</TableCell>
-            <TableCell key={4} className={classes.tableCell}>Last Price</TableCell>
-            <TableCell key={5} className={classes.tableCell}>Offer Price</TableCell>
-            <TableCell key={6} className={classes.tableCell}>Currency</TableCell>
-            <TableCell key={7} className={classes.tableCell}>Royalty</TableCell>
-            <TableCell key={8} className={classes.tableCell}>Withdraw</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {offeredByMe.map(t => (
-            <TableRow key={t.contractId} className={classes.tableRow}>
-              <TableCell key={0} className={classes.tableCell}>{t.payload.newOwner}</TableCell>
-              <TableCell key={1} className={classes.tableCell}>{t.payload.issuer}</TableCell>
-              <TableCell key={2} className={classes.tableCell}>{t.payload.description}</TableCell>
-              <TableCell key={3} className={classes.tableCell}>{t.payload.issued}</TableCell>
-              <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
-              <TableCell key={5} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.price)}</TableCell>
-              <TableCell key={6} className={classes.tableCell}>{t.payload.currency}</TableCell>
-              <TableCell key={7} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
-              <TableCell key={8} className={classes.tableCellButton}>
-                <Button color="primary" size="small" className={classes.choiceButton} variant="contained" onClick={() => justClawBack(t) }>Claw Back</Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <br/>
-      <Typography>Incoming Offers</Typography>
-      <Table size="small">
-        <TableHead>
-          <TableRow className={classes.tableRow}>
-            <TableCell key={0} className={classes.tableCell}>Offered By</TableCell>
-            <TableCell key={1} className={classes.tableCell}>Issuer</TableCell>
-            <TableCell key={2} className={classes.tableCell}>Description</TableCell>
-            <TableCell key={3} className={classes.tableCell}>Issued</TableCell>
-            <TableCell key={4} className={classes.tableCell}>Last Price</TableCell>
-            <TableCell key={5} className={classes.tableCell}>Offer Price</TableCell>
-            <TableCell key={6} className={classes.tableCell}>Currency</TableCell>
-            <TableCell key={7} className={classes.tableCell}>Royalty</TableCell>
-            <TableCell key={8} className={classes.tableCell}>Accept</TableCell>
-            <TableCell key={9} className={classes.tableCell}>Reject</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {offeredToMe.map(t => (
-            <TableRow key={t.contractId} className={classes.tableRow}>
-              <TableCell key={0} className={classes.tableCell}>{t.payload.owner}</TableCell>
-              <TableCell key={1} className={classes.tableCell}>{t.payload.issuer}</TableCell>
-              <TableCell key={2} className={classes.tableCell}>{t.payload.description}</TableCell>
-              <TableCell key={3} className={classes.tableCell}>{t.payload.issued}</TableCell>
-              <TableCell key={4} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.lastPrice)}</TableCell>
-              <TableCell key={5} className={classes.tableCell}>{formatter(t.payload.currency, t.payload.price)}</TableCell>
-              <TableCell key={6} className={classes.tableCell}>{t.payload.currency}</TableCell>
-              <TableCell key={7} className={classes.tableCell}>{t.payload.royaltyRate}</TableCell>
-              <TableCell key={8} className={classes.tableCellButton}>
-                <Button color="primary" size="small" className={classes.choiceButton} variant="contained" onClick={() => justAccept(t) }>Sure!</Button>
-              </TableCell>
-              <TableCell key={9} className={classes.tableCellButton}>
-                <Button color="primary" size="small" className={classes.choiceButton} variant="contained" onClick={() => justReject(t) }>Nope!</Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+
     </>
   );
 }

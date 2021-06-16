@@ -37,7 +37,7 @@ export default function MyWorks() {
     return ccyFormatter.format(parseFloat(amountStr));
   }
 
-  const defaultMintProps : InputDialogProps<MintToken> = {
+  const defaultMintProps : InputDialogProps<MintToken> = {  
     open: false,
     title: "Mint Token",
     defaultValue: {
