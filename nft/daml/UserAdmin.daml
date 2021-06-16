@@ -24,10 +24,10 @@ template Issuer
           thumbnail: Thumbnail
         do 
           issued <- getTime
-          create Token 
+          create Token
             with 
               lastPrice = initialPrice
-              owner = issuer 
+              owner = issuer
               ..
 
     controller userAdmin can 
