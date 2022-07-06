@@ -15,21 +15,6 @@ template Issuer
     key (userAdmin, issuer): (Party, Party)
     maintainer key._1
 
-    -- controller issuer can 
-    --   nonconsuming MintToken: ContractId Token 
-    --     with 
-    --       description: Text 
-    --       initialPrice: Decimal 
-    --       currency: Text 
-    --       royaltyRate: Decimal 
-    --       thumbnail: Thumbnail
-    --     do 
-    --       issued <- getTime
-    --       create Token
-    --         with 
-    --           lastPrice = initialPrice
-    --           owner = issuer
-    --           ..
     choice MintToken: ContractId Token
       with 
         description: Text
@@ -46,9 +31,6 @@ template Issuer
             owner = issuer
             ..
 
-    -- controller userAdmin can 
-    --   RevokeIssuer: () 
-    --     do return ()
     choice RevokeIssuer: ()
       controller userAdmin
       do
@@ -65,13 +47,6 @@ template IssuerRequest
     key (userAdmin, issuer): (Party, Party)
     maintainer key._2
 
-    -- controller userAdmin can 
-    --   GrantIssuerRights: ContractId Issuer 
-    --     do 
-    --       create Issuer with ..
-
-    --   RejectIssuerRequest: () 
-    --     do return ()
     choice GrantIssuerRights: ContractId Issuer
       controller userAdmin
       do
@@ -88,24 +63,9 @@ template Owner
   where 
     signatory userAdmin
     ensure userAdmin /= owner
-
+    observer owner
     key (userAdmin, owner): (Party, Party)
     maintainer key._1
-
-    -- controller owner can 
-    --   nonconsuming AcceptTokenAsNewOwner: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
-    --     with 
-    --       offerId: ContractId TokenOffer 
-    --     do 
-    --       exercise offerId AcceptToken 
-
-    --   nonconsuming AcceptTokenByKey: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
-    --     with 
-    --       issuer: Party 
-    --       currentOwner: Party 
-    --       description: Text 
-    --     do 
-    --       exerciseByKey @TokenOffer (issuer, currentOwner, description) AcceptToken
     
     nonconsuming choice AcceptTokenAsNewOwner:(ContractId Token, ContractId Payable, Optional (ContractId Payable))
       with 
@@ -123,9 +83,6 @@ template Owner
       do
         exerciseByKey @TokenOffer (issuer, currentOwner, description) AcceptToken
 
-    -- controller userAdmin can 
-    --   RevokeOwnerRights: () 
-    --     do return ()
     choice RevokeOwnerRights: ()
       controller userAdmin
       do
@@ -142,13 +99,6 @@ template OwnerRequest
     key (userAdmin, owner): (Party, Party)
     maintainer key._2
 
-    -- controller userAdmin can 
-    --   GrantOwnerRights: ContractId Owner 
-    --     do 
-    --       create Owner with ..
-
-    --   RejectOwnerRequest: () 
-    --     do return ()
     choice GrantOwnerRights: ContractId Owner
       controller userAdmin
       do
