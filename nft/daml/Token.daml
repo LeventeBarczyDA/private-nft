@@ -30,13 +30,20 @@ template Token
     signatory issuer, userAdmin 
     ensure userAdmin /= issuer
 
-    controller owner can 
-      Offer: ContractId TokenOffer
-        with 
-          newOwner: Party 
-          price: Decimal 
-        do 
-          create TokenOffer with ..
+    -- controller owner can 
+    --   Offer: ContractId TokenOffer
+    --     with 
+    --       newOwner: Party 
+    --       price: Decimal 
+    --     do 
+    --       create TokenOffer with ..
+    choice Offer: ContractId TokenOffer
+      with
+        newOwner: Party
+        price: Decimal
+      controller owner
+      do
+        create TokenOffer with..
 
 template TokenOffer 
   with 
@@ -53,13 +60,42 @@ template TokenOffer
     thumbnail: Thumbnail
   where 
     signatory issuer, userAdmin, owner 
-
+    observer issuer, owner
     key (issuer, owner, description): (Party, Party, Text)
     maintainer key._2
 
-    controller newOwner, userAdmin can 
-      AcceptToken: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
-        do 
+    -- controller newOwner, userAdmin can 
+    --   AcceptToken: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
+    --     do 
+    --       fromNewOwnerToOwner <- create Payable 
+    --         with 
+    --           from = newOwner
+    --           to = owner 
+    --           amount = price 
+    --           currency 
+    --           reference = "Notional for `" <> description <> "`."
+
+    --       condRoyaltyPayment <- if owner == issuer 
+    --         then return None 
+    --         else Some <$> create Payable 
+    --           with 
+    --             from = newOwner 
+    --             to = issuer 
+    --             amount = price * royaltyRate 
+    --             currency 
+    --             reference = "Royalty for `" <> description <> "`."
+
+    --       newToken <- create Token 
+    --         with 
+    --           owner = newOwner 
+    --           lastPrice = price 
+    --           ..
+
+    --       return (newToken, fromNewOwnerToOwner, condRoyaltyPayment)
+
+    choice AcceptToken: (ContractId Token, ContractId Payable, Optional (ContractId Payable))
+      controller newOwner, userAdmin
+      do 
           fromNewOwnerToOwner <- create Payable 
             with 
               from = newOwner
@@ -86,12 +122,23 @@ template TokenOffer
 
           return (newToken, fromNewOwnerToOwner, condRoyaltyPayment)
 
-    controller newOwner can 
-      Reject: ContractId Token 
-        do 
-          create Token with ..
 
-    controller owner can 
-      ClawBack: ContractId Token 
-        do 
-          create Token with ..
+    -- controller newOwner can 
+    --   Reject: ContractId Token 
+    --     do 
+    --       create Token with ..
+    choice Reject: ContractId Token
+      controller newOwner
+      do
+        create Token with ..
+
+
+    -- controller owner can 
+    --   ClawBack: ContractId Token 
+    --     do 
+    --       create Token with ..
+    choice ClawBack: ContractId Token
+      controller owner
+      do
+        create Token with ..
+
