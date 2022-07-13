@@ -5,15 +5,12 @@ sdk-version: 2.2.0
 name: nft
 source: daml
 init-script: Main:setup
-parties:
-  - Alice
-  - Bob
-  - Charlie
-  - UserAdmin
-  - Doug
-  - Ellen
 version: 0.0.1
 dependencies:
   - daml-prim
   - daml-stdlib
   - daml-script
+codegen:
+  js:
+    output-directory: daml.js
+    npm-scope: daml.js

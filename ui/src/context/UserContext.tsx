@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import { History } from 'history';
 import { createToken, dablLoginUrl, damlPartyKey, damlTokenKey } from "../config";
 
@@ -28,6 +28,11 @@ type SignoutSuccess = {
   type : "SIGN_OUT_SUCCESS"
 }
 
+interface Props {
+  children: React.ReactNode; 
+}
+
+
 type LoginAction = LoginSuccess | LoginFailure | SignoutSuccess
 
 const UserStateContext = React.createContext<UserState>({ isAuthenticated: false });
@@ -44,7 +49,7 @@ function userReducer(state : UserState, action : LoginAction) : UserState {
   }
 }
 
-const UserProvider : React.FC = ({ children }) => {
+const UserProvider : React.FC<Props> = ({children}) => {
   const party = localStorage.getItem(damlPartyKey);
   const token = localStorage.getItem(damlTokenKey);
 
